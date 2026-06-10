@@ -50,16 +50,18 @@ const QUESTIONS = {
 
 // ─── Foundry Agent API ────────────────────────────────────────────────────────
 
-/*
+
 const ENDPOINT = import.meta.env.VITE_AGENT_ENDPOINT
 const API_KEY  = import.meta.env.VITE_AGENT_KEY
 const AGENT_ID = import.meta.env.VITE_AGENT_ID
 const API_VER  = '2025-01-01-preview'
-*/
+
+/*
 const ENDPOINT = "https://swasthya-saathi-foundry-resource.services.ai.azure.com/api/projects/swasthya-saathi-foundry-sw"
 const API_KEY  = "2RUVBMKVBqJiIl79nXMst1wbPMyA48Ez4DSjvqcdpbsDrUZnDhNpJQQJ99CFACfhMk5XJ3w3AAAAACOGFbEl"
 const AGENT_ID = "3f9ce162-344c-482b-abe8-d4bcfa26d078"
 const API_VER  = '2025-01-01-preview'
+*/
 
 const headers = {
   'Content-Type': 'application/json',
