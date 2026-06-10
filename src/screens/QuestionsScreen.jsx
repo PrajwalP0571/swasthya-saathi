@@ -48,190 +48,181 @@ const QUESTIONS = {
   ],
 }
 
-// ─── Foundry Agent API ────────────────────────────────────────────────────────
+// ─── Azure OpenAI ─────────────────────────────────────────────────────────────
 
+const AOAI_ENDPOINT = import.meta.env.VITE_AOAI_ENDPOINT
+const AOAI_KEY      = import.meta.env.VITE_AOAI_KEY
+const DEPLOYMENT    = import.meta.env.VITE_AOAI_DEPLOYMENT || 'gpt-4o'
+const AOAI_API_VER  = '2025-05-01'
 
-const ENDPOINT = import.meta.env.VITE_AGENT_ENDPOINT
-const API_KEY  = import.meta.env.VITE_AGENT_KEY
-const AGENT_ID = import.meta.env.VITE_AGENT_ID
-const API_VER  = '2025-01-01-preview'
+async function callAzureOpenAI(systemPrompt, userPrompt) {
+  const url = `${AOAI_ENDPOINT}/openai/deployments/${DEPLOYMENT}/chat/completions?api-version=${AOAI_API_VER}`
 
-/*
-const ENDPOINT = "https://swasthya-saathi-foundry-resource.services.ai.azure.com/api/projects/swasthya-saathi-foundry-sw"
-const API_KEY  = "2RUVBMKVBqJiIl79nXMst1wbPMyA48Ez4DSjvqcdpbsDrUZnDhNpJQQJ99CFACfhMk5XJ3w3AAAAACOGFbEl"
-const AGENT_ID = "3f9ce162-344c-482b-abe8-d4bcfa26d078"
-const API_VER  = '2025-01-01-preview'
-*/
-
-const headers = {
-  'Content-Type': 'application/json',
-  'api-key': API_KEY,
-}
-
-async function createThread() {
-  const res = await fetch(`${ENDPOINT}/threads?api-version=${API_VER}`, {
+  const res = await fetch(url, {
     method: 'POST',
-    headers,
-    body: JSON.stringify({}),
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': AOAI_KEY,
+    },
+    body: JSON.stringify({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userPrompt },
+      ],
+      temperature: 0.1,
+      max_tokens: 2000,
+      response_format: { type: 'json_object' },
+    }),
   })
-  if (!res.ok) throw new Error(`Thread creation failed: ${res.status}`)
-  const data = await res.json()
-  return data.id
-}
 
-async function addMessage(threadId, content) {
-  const res = await fetch(`${ENDPOINT}/threads/${threadId}/messages?api-version=${API_VER}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ role: 'user', content }),
-  })
-  if (!res.ok) throw new Error(`Message creation failed: ${res.status}`)
-}
-
-async function createRun(threadId) {
-  const res = await fetch(`${ENDPOINT}/threads/${threadId}/runs?api-version=${API_VER}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ assistant_id: AGENT_ID }),
-  })
-  if (!res.ok) throw new Error(`Run creation failed: ${res.status}`)
-  const data = await res.json()
-  return data.id
-}
-
-async function pollRun(threadId, runId) {
-  const maxAttempts = 30
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((r) => setTimeout(r, 2000))
-    const res = await fetch(
-      `${ENDPOINT}/threads/${threadId}/runs/${runId}?api-version=${API_VER}`,
-      { headers }
-    )
-    if (!res.ok) throw new Error(`Poll failed: ${res.status}`)
-    const data = await res.json()
-    if (data.status === 'completed') return true
-    if (['failed', 'cancelled', 'expired'].includes(data.status)) {
-      throw new Error(`Run ended with status: ${data.status}`)
-    }
-  }
-  throw new Error('Agent timed out')
-}
-
-async function getMessages(threadId) {
-  const res = await fetch(
-    `${ENDPOINT}/threads/${threadId}/messages?api-version=${API_VER}`,
-    { headers }
-  )
-  if (!res.ok) throw new Error(`Get messages failed: ${res.status}`)
-  const data = await res.json()
-  // Return the latest assistant message
-  const assistantMsgs = data.data.filter((m) => m.role === 'assistant')
-  if (!assistantMsgs.length) return ''
-  const latest = assistantMsgs[0]
-  return latest.content
-    .filter((c) => c.type === 'text')
-    .map((c) => c.text.value)
-    .join('\n')
-}
-
-// ─── Parse agent response into scheme cards ──────────────────────────────────
-
-function parseAgentResponse(rawText) {
-  // Try to extract structured scheme blocks from agent response
-  // Agent is instructed to return schemes in a parseable format
-  // Fallback: return single card with full response
-  const schemes = []
-
-  // Split by common scheme separators
-  const blocks = rawText.split(/\n(?=#{1,3}\s|\d+\.\s|\*\*[A-Z])/).filter(Boolean)
-
-  if (blocks.length > 1) {
-    blocks.forEach((block) => {
-      const lines = block.trim().split('\n').filter(Boolean)
-      const name = lines[0].replace(/^[#*\d.\s]+/, '').trim()
-      const rest = lines.slice(1).join(' ')
-
-      const benefitMatch = rest.match(/benefit[:\-]?\s*([^.]+\.)/i)
-      const applyMatch   = rest.match(/apply[:\-]?\s*([^.]+\.)/i)
-      const sourceMatch  = rest.match(/source[:\-]?\s*(\S+)/i)
-
-      if (name.length > 5) {
-        schemes.push({
-          name,
-          shortDesc: rest.slice(0, 80).replace(/\*\*/g, '').trim() + '…',
-          benefit:   benefitMatch ? benefitMatch[1].trim() : rest.slice(0, 120).trim(),
-          howToApply: applyMatch  ? applyMatch[1].trim()  : 'Visit your nearest government health centre or Common Service Centre.',
-          source:    sourceMatch  ? sourceMatch[1].trim() : 'nhm.gov.in',
-        })
-      }
-    })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`Azure OpenAI error ${res.status}: ${err?.error?.message || res.statusText}`)
   }
 
-  // Fallback — wrap entire response in one card
-  if (!schemes.length) {
-    schemes.push({
-      name: 'Schemes Found',
-      shortDesc: 'Based on your profile and health need',
-      benefit: rawText.slice(0, 300).replace(/\*\*/g, '').trim(),
-      howToApply: 'Visit your nearest government health centre or Common Service Centre with Aadhaar card.',
-      source: 'Swasthya Saathi · Foundry IQ',
-    })
-  }
-
-  return schemes
+  const data = await res.json()
+  const content = data.choices?.[0]?.message?.content
+  if (!content) throw new Error('Empty response from model')
+  return content
 }
 
-// ─── Build the prompt for the agent ──────────────────────────────────────────
+// ─── System prompt with full knowledge base ───────────────────────────────────
 
-function buildPrompt(profile, selectedMember, selectedNeed, answers, lang) {
+function getSystemPrompt(lang) {
   const langInstruction =
-    lang === 'hi' ? 'Please respond in Hindi.' :
-    lang === 'mr' ? 'Please respond in Marathi.' :
-    'Please respond in English.'
+    lang === 'hi' ? 'Respond entirely in Hindi language.' :
+    lang === 'mr' ? 'Respond entirely in Marathi language.' :
+    'Respond in English.'
 
+  return `You are Swasthya Saathi, an expert advisor on Indian government health schemes for rural citizens.
+
+${langInstruction}
+
+Your knowledge base contains these 9 official government health schemes:
+
+SCHEME 1: AYUSHMAN BHARAT PM-JAY
+- Full name: Pradhan Mantri Jan Arogya Yojana
+- Benefit: Rs.5 lakh per family per year cashless hospitalisation cover
+- Eligibility: BPL families, SECC beneficiaries, unorganised workers, no upper income limit for listed categories
+- Apply: Go to any empanelled hospital with Aadhaar card OR visit Common Service Centre for PMJAY card
+- Source: pmjay.gov.in
+
+SCHEME 2: JSY - Janani Suraksha Yojana
+- Benefit: Rs.1400 cash transfer for delivery in Low Performing States (UP, MP, Rajasthan, Bihar, Jharkhand, Odisha, Uttarakhand, J&K, Assam), Rs.700 in other states
+- Eligibility: Pregnant women from BPL families, all SC/ST women, age 19 and above
+- Apply: Register at PHC or CHC within first trimester. ASHA worker assists with documents and cash transfer
+- Source: nhm.gov.in
+
+SCHEME 3: PMMVY - Pradhan Mantri Matru Vandana Yojana
+- Benefit: Rs.5000 cash in 3 instalments for first live birth (Rs.1000 on registration, Rs.2000 after first ANC, Rs.2000 after delivery and vaccination)
+- Eligibility: Pregnant and lactating women aged 19+ for their first child
+- Apply: Register at Anganwadi Centre with pregnancy registration within 150 days. Bring bank account details and Aadhaar
+- Source: wcd.nic.in
+
+SCHEME 4: JSSK - Janani Shishu Suraksha Karyakram
+- Benefit: Completely free delivery including C-section, free medicines, diagnostics, blood transfusion, diet, transport for pregnant women and sick newborns at ALL government facilities
+- Eligibility: Every pregnant woman who goes to a government health facility
+- Apply: Just walk into any government hospital. All entitlements are automatic and free
+- Source: nhm.gov.in
+
+SCHEME 5: RBSK - Rashtriya Bal Swasthya Karyakram
+- Benefit: Free health screening and treatment for children 0-18 years for 30+ conditions including birth defects, heart surgery, cleft lip, deafness, blindness, malnutrition
+- Eligibility: All children from birth to 18 years
+- Apply: Mobile health teams visit Anganwadis and schools. Parents can visit District Early Intervention Centre (DEIC) directly
+- Source: nhm.gov.in
+
+SCHEME 6: NTEP / NIKSHAY POSHAN YOJANA
+- Benefit: Rs.500 per month nutritional support during entire TB treatment period. Free TB diagnosis and free medicines under DOTS programme
+- Eligibility: All TB patients registered under NTEP programme
+- Apply: Visit nearest government hospital, PHC, or DOTS centre. Register on Nikshay portal with Aadhaar
+- Source: nikshay.in
+
+SCHEME 7: NPCDCS - National Programme for Prevention and Control of Cancer, Diabetes, CVD and Stroke
+- Benefit: Free screening for diabetes, hypertension, oral cancer, breast cancer, cervical cancer at government CHCs and District Hospitals. Free medicines for NCD patients
+- Eligibility: All citizens above 30 years. Women for cancer screening
+- Apply: Visit NCD clinic at nearest CHC or District Hospital. Free OPD, free medicines, free investigations
+- Source: mohfw.gov.in
+
+SCHEME 8: ESIC - Employees State Insurance Corporation
+- Benefit: Free comprehensive medical care for worker and family, sickness cash benefit at 70% of wages, maternity benefit at full wages for 26 weeks, disability pension, dependent benefit
+- Eligibility: Employees earning up to Rs.21000 per month in registered factories and establishments with 10 or more workers
+- Apply: Employer must register. Worker gets ESIC card automatically. Visit ESIC hospital or dispensary with card
+- Source: esic.in
+
+SCHEME 9: NHM FREE MEDICINES AND DIAGNOSTICS
+- Benefit: Free essential medicines at all government PHC, CHC and District Hospitals. Free diagnostic tests including blood tests, X-ray, ultrasound at government facilities
+- Eligibility: Every citizen who visits a government health facility
+- Apply: Simply visit any government PHC, CHC, or District Hospital
+- Source: nhm.gov.in
+
+TASK: Based on the citizen profile and health need provided, identify ALL schemes they are eligible for. 
+
+RULES:
+- Only include schemes the person genuinely qualifies for
+- Include 2 to 5 schemes maximum
+- For each scheme include specific benefit amounts in Rupees where applicable
+- Keep howToApply simple and actionable — maximum 2 sentences
+- Return ONLY valid JSON in this exact format with no other text:
+
+{"schemes": [{"name": "scheme name", "shortDesc": "one line description", "benefit": "specific benefit with Rs amount", "howToApply": "simple steps to apply", "source": "official website"}]}`
+}
+
+// ─── Build user prompt ────────────────────────────────────────────────────────
+
+function buildUserPrompt(profile, selectedMember, selectedNeed, answers) {
   const answerSummary = Object.entries(answers)
     .map(([k, v]) => `${k}: ${v}`)
     .join(', ')
 
-  return `${langInstruction}
+  return `CITIZEN PROFILE:
+Name: ${selectedMember?.name || profile?.name || 'Not provided'}
+Age: ${selectedMember?.age || profile?.age || 'Not provided'}
+Gender: ${profile?.gender || 'Not provided'}
+State: ${profile?.state || 'Not provided'}
+Annual Family Income: ${profile?.income || 'Not provided'}
+Occupation: ${profile?.occupation || 'Not provided'}
+Has Ayushman Card: ${profile?.hasAyushman || 'Not provided'}
 
-A citizen in India needs help finding government health schemes they qualify for.
+HEALTH NEED CATEGORY: ${selectedNeed}
+ADDITIONAL DETAILS: ${answerSummary || 'None'}
 
-CITIZEN PROFILE:
-- Name: ${selectedMember?.name || profile?.name || 'Unknown'}
-- Age: ${selectedMember?.age || profile?.age || 'Unknown'}
-- Gender: ${profile?.gender || 'Unknown'}
-- State: ${profile?.state || 'Unknown'}
-- District: ${profile?.district || 'Unknown'}
-- Annual Income: ${profile?.income || 'Unknown'}
-- Occupation: ${profile?.occupation || 'Unknown'}
-- Has Ayushman Card: ${profile?.hasAyushman || 'Unknown'}
-
-HEALTH NEED: ${selectedNeed}
-ADDITIONAL DETAILS: ${answerSummary}
-
-Please list ALL government health schemes this person is likely eligible for.
-For each scheme include:
-1. Scheme name
-2. Key benefit (cash amount or coverage)
-3. How to apply
-4. Official source URL
-
-Focus on central government schemes like PM-JAY, JSY, JSSK, PMSBY, NIKSHAY POSHAN, and any relevant state schemes for ${profile?.state || 'India'}.`
+Which schemes from your knowledge base is this person eligible for? Return JSON only.`
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Parse response ───────────────────────────────────────────────────────────
+
+function parseSchemes(rawText) {
+  try {
+    const parsed = JSON.parse(rawText)
+    // Handle both {schemes: [...]} and direct array
+    const schemes = parsed.schemes || parsed
+    if (Array.isArray(schemes) && schemes.length > 0) return schemes
+  } catch (e) {
+    console.warn('Parse error:', e, 'Raw:', rawText)
+  }
+
+  // Fallback
+  return [{
+    name: 'Health Schemes Available',
+    shortDesc: 'Government schemes based on your profile',
+    benefit: rawText.slice(0, 300).replace(/[{}"]/g, '').trim(),
+    howToApply: 'Visit your nearest government PHC or Common Service Centre with Aadhaar card.',
+    source: 'nhm.gov.in',
+  }]
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function QuestionsScreen() {
   const { t, lang, profile, family, selectedNeed, setSchemeResults, navigate } = useApp()
-  const [step, setStep] = useState(0)
+  const [step, setStep]                     = useState(0)
   const [selectedMember, setSelectedMember] = useState(null)
-  const [answers, setAnswers] = useState({})
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [answers, setAnswers]               = useState({})
+  const [loading, setLoading]               = useState(false)
+  const [error, setError]                   = useState(null)
 
-  const questions   = QUESTIONS[selectedNeed] || []
-  const totalSteps  = 1 + questions.length
+  const questions       = QUESTIONS[selectedNeed] || []
+  const totalSteps      = 1 + questions.length
   const currentQuestion = questions[step - 1]
 
   const allMembers = [
@@ -255,18 +246,16 @@ export default function QuestionsScreen() {
     setLoading(true)
     setError(null)
     try {
-      const prompt   = buildPrompt(profile, selectedMember, selectedNeed, answers, lang)
-      const threadId = await createThread()
-      await addMessage(threadId, prompt)
-      const runId    = await createRun(threadId)
-      await pollRun(threadId, runId)
-      const rawText  = await getMessages(threadId)
-      const schemes  = parseAgentResponse(rawText)
+      const systemPrompt = getSystemPrompt(lang)
+      const userPrompt   = buildUserPrompt(profile, selectedMember, selectedNeed, answers)
+      const rawText      = await callAzureOpenAI(systemPrompt, userPrompt)
+      console.log('Agent raw response:', rawText)
+      const schemes      = parseSchemes(rawText)
       setSchemeResults(schemes)
       navigate('results')
     } catch (err) {
       console.error('Agent error:', err)
-      setError('Could not reach the agent. Please check your connection and try again.')
+      setError(`Could not reach the AI. ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -277,7 +266,7 @@ export default function QuestionsScreen() {
   return (
     <div className="screen px-5 pt-12 pb-10">
 
-      {/* Back button */}
+      {/* Back */}
       <button
         onClick={() => step === 0 ? navigate('schemeFinder') : setStep(step - 1)}
         className="flex items-center gap-1 text-brand-text-muted text-sm mb-6"
@@ -303,7 +292,7 @@ export default function QuestionsScreen() {
         <p className="screen-subtitle">{t.questions.subtitle}</p>
       </div>
 
-      {/* Step 0 — Member selection */}
+      {/* Step 0 — member selection */}
       {step === 0 && (
         <div>
           <p className="text-sm font-semibold text-brand-navy mb-4">
@@ -312,9 +301,7 @@ export default function QuestionsScreen() {
           <div className="flex flex-wrap gap-3">
             {allMembers.map((m, i) => (
               <FamilyMemberChip
-                key={i}
-                member={m}
-                index={i}
+                key={i} member={m} index={i}
                 selected={selectedMember?.name === m.name}
                 onSelect={setSelectedMember}
               />
@@ -323,7 +310,7 @@ export default function QuestionsScreen() {
         </div>
       )}
 
-      {/* Steps 1+ — Questions */}
+      {/* Steps 1+ — questions */}
       {step > 0 && currentQuestion && (
         <div>
           <p className="text-sm font-semibold text-brand-navy mb-4">
@@ -347,7 +334,7 @@ export default function QuestionsScreen() {
         </div>
       )}
 
-      {/* Error message */}
+      {/* Error */}
       {error && (
         <div className="mt-4 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
           <p className="text-red-600 text-sm">{error}</p>
@@ -366,7 +353,7 @@ export default function QuestionsScreen() {
             {t.questions.agentThinking}
           </p>
           <p className="text-brand-text-muted text-sm text-center">
-            Searching Foundry IQ knowledge base…
+            Searching health scheme knowledge base…
           </p>
           <div className="flex items-center gap-2 mt-2">
             <div className="w-2 h-2 rounded-full bg-brand-green animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -376,7 +363,7 @@ export default function QuestionsScreen() {
         </div>
       )}
 
-      {/* Next / Submit button */}
+      {/* Next / Submit */}
       <div className="mt-10">
         <button
           onClick={handleNext}
