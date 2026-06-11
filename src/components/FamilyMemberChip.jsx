@@ -18,16 +18,20 @@ function getInitials(name) {
     .slice(0, 2)
 }
 
-export default function FamilyMemberChip({ member, index, selected, onSelect }) {
+export default function FamilyMemberChip({ member, index, selected, onSelect, eligible = true, ineligibilityReason = null }) {
   const colorClass = avatarColors[index % avatarColors.length]
 
   return (
     <button
-      onClick={() => onSelect(member)}
+      onClick={() => eligible && onSelect(member)}
+      disabled={!eligible}
+      title={ineligibilityReason || ''}
       className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all duration-150 active:scale-95 min-w-[72px]
-        ${selected
-          ? 'border-brand-green bg-brand-green-pale'
-          : 'border-gray-100 bg-white'
+        ${!eligible
+          ? 'border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed'
+          : selected
+            ? 'border-brand-green bg-brand-green-pale'
+            : 'border-gray-100 bg-white'
         }`}
     >
       {/* Avatar circle */}
@@ -37,12 +41,18 @@ export default function FamilyMemberChip({ member, index, selected, onSelect }) 
 
       {/* Name */}
       <span className={`text-xs font-medium text-center leading-tight max-w-[64px] truncate
-        ${selected ? 'text-brand-green' : 'text-brand-text-primary'}`}>
+        ${!eligible 
+          ? 'text-gray-400' 
+          : selected ? 'text-brand-green' : 'text-brand-text-primary'}`}>
         {member.name}
       </span>
 
-      {/* Relation badge */}
-      {member.relation && (
+      {/* Relation badge or ineligibility reason */}
+      {ineligibilityReason ? (
+        <span className="text-xs text-red-500 leading-none font-medium">
+          {ineligibilityReason}
+        </span>
+      ) : member.relation && (
         <span className="text-xs text-brand-text-muted leading-none">
           {member.relation}
         </span>
