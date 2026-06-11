@@ -48,6 +48,61 @@ const QUESTIONS = {
   ],
 }
 
+// ─── Eligibility Validation ──────────────────────────────────────────────────
+
+// Infer gender from relation name
+function inferGender(relation) {
+  const femaleRelations = ['wife', 'mother', 'daughter', 'sister', 'aunt', 'grandmother', 'niece', 'myself']
+  const maleRelations = ['husband', 'father', 'son', 'brother', 'uncle', 'grandfather', 'nephew']
+  
+  if (!relation) return null
+  const lowerRelation = relation.toLowerCase()
+  if (femaleRelations.some(r => lowerRelation.includes(r))) return 'female'
+  if (maleRelations.some(r => lowerRelation.includes(r))) return 'male'
+  return null
+}
+
+// Check if family member is eligible for selected need
+function isEligibleForNeed(member, selectedNeed) {
+  if (selectedNeed === 'pregnancy') {
+    // Gender female AND Age >= 14
+    const memberGender = member.gender || inferGender(member.relation)
+    return memberGender === 'female' && member.age >= 14
+  }
+  
+  if (selectedNeed === 'child') {
+    // Age <= 12
+    return member.age <= 12
+  }
+  
+  if (selectedNeed === 'elder') {
+    // Age >= 65
+    return member.age >= 65
+  }
+  
+  // All other schemes allow all family members
+  return true
+}
+
+// Get reason why member is ineligible (for display)
+function getIneligibilityReason(member, selectedNeed) {
+  if (selectedNeed === 'pregnancy') {
+    const memberGender = member.gender || inferGender(member.relation)
+    if (memberGender !== 'female') return 'Only for females'
+    if (member.age < 14) return 'Must be 14+'
+  }
+  
+  if (selectedNeed === 'child' && member.age > 12) {
+    return 'Only ages 0-12'
+  }
+  
+  if (selectedNeed === 'elder' && member.age < 65) {
+    return 'Only 65+'
+  }
+  
+  return null
+}
+
 // ─── Foundry Agent API ────────────────────────────────────────────────────────
 
 
@@ -235,9 +290,12 @@ export default function QuestionsScreen() {
   const currentQuestion = questions[step - 1]
 
   const allMembers = [
-    { name: profile?.name || 'Myself', relation: 'Self', age: profile?.age },
+    { name: profile?.name || 'Myself', relation: 'Self', age: profile?.age, gender: profile?.gender },
     ...family,
   ]
+  
+  // Filter eligible members for current scheme
+  const eligibleMembers = allMembers.filter(m => isEligibleForNeed(m, selectedNeed))
 
   const handleAnswer = (questionId, answer) => {
     setAnswers((prev) => ({ ...prev, [questionId]: answer }))
@@ -306,20 +364,43 @@ export default function QuestionsScreen() {
       {/* Step 0 — Member selection */}
       {step === 0 && (
         <div>
-          <p className="text-sm font-semibold text-brand-navy mb-4">
-            {t.questions.whichMember}
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {allMembers.map((m, i) => (
-              <FamilyMemberChip
-                key={i}
-                member={m}
-                index={i}
-                selected={selectedMember?.name === m.name}
-                onSelect={setSelectedMember}
-              />
-            ))}
-          </div>
+          {eligibleMembers.length === 0 ? (
+            <div className="bg-red-50 border border-red-100 rounded-2xl px-5 py-4">
+              <p className="font-semibold text-red-700 mb-2">Not Applicable</p>
+              <p className="text-sm text-red-600 mb-4">
+                No family members are eligible for this scheme.
+              </p>
+              <button
+                onClick={() => navigate('schemeFinder')}
+                className="w-full px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium"
+              >
+                Choose Different Scheme
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-brand-navy mb-4">
+                {t.questions.whichMember}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {allMembers.map((m, i) => {
+                  const eligible = isEligibleForNeed(m, selectedNeed)
+                  const reason = getIneligibilityReason(m, selectedNeed)
+                  return (
+                    <FamilyMemberChip
+                      key={i}
+                      member={m}
+                      index={i}
+                      selected={selectedMember?.name === m.name}
+                      onSelect={setSelectedMember}
+                      eligible={eligible}
+                      ineligibilityReason={reason}
+                    />
+                  )
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
 
