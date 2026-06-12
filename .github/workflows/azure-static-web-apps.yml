@@ -20,7 +20,6 @@ jobs:
           app_location: "/"
           output_location: "dist"
           app_build_command: "npm run build"
-        env:
-          VITE_AOAI_ENDPOINT: ${{ secrets.VITE_AOAI_ENDPOINT }}
-          VITE_AOAI_KEY: ${{ secrets.VITE_AOAI_KEY }}
-          VITE_AOAI_DEPLOYMENT: ${{ secrets.VITE_AOAI_DEPLOYMENT }}
+	env:
+          VITE_FOUNDRY_ENDPOINT: ${{ secrets.VITE_FOUNDRY_ENDPOINT }}
+          VITE_FOUNDRY_KEY: ${{ secrets.VITE_FOUNDRY_KEY }}
