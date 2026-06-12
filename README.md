@@ -262,7 +262,7 @@ Swasthya Saathi is a working prototype. With more time, here's the roadmap:
 | **Track** | Reasoning Agents |
 | **IQ Layer** | Foundry IQ — Azure AI Foundry Agent, GPT-4o, Responses API |
 | **Live URL** | [witty-mud-06d37ba0f.7.azurestaticapps.net](https://witty-mud-06d37ba0f.7.azurestaticapps.net) |
-| **Discord** | prajwalpawar_95526 |
+| **Discord** | prajwalpawar0571 |
 
 ---
 
