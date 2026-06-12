@@ -73,8 +73,8 @@ function isMemberEligible(member, selectedNeed) {
 }
 
 // ─── Foundry Agent — Responses API ───────────────────────────────────────────
-const FOUNDRY_ENDPOINT = "https://swasthya-project-resource.services.ai.azure.com/api/projects/swasthya-project/agents/Swasthya-Saathi/endpoint/protocols/openai/responses"
-const FOUNDRY_KEY      = "4Cnv1RznPB8KEHuAtSby1qtOjOLu52gq8mtzIqTvgZru1zv5k241JQQJ99CFACHYHv6XJ3w3AAAAACOGoRkp"
+const FOUNDRY_ENDPOINT = import.meta.env.VITE_FOUNDRY_ENDPOINT;
+const FOUNDRY_KEY      = import.meta.env.VITE_FOUNDRY_KEY;
 
 async function callAzureOpenAI(systemPrompt, userPrompt) {
   const res = await fetch(`${FOUNDRY_ENDPOINT}?api-version=2025-11-15-preview`, {
