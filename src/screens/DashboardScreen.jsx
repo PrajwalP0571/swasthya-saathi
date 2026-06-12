@@ -35,12 +35,17 @@ const RELATIONS      = ['Wife','Husband','Son','Daughter','Father','Mother','Bro
 
 const EMPTY_MEMBER = { name: '', relation: '', age: '', gender: '', state: '', district: '', city: '', income: '', occupation: '', hasAyushman: '' }
 
-function MemberForm({ data, onChange, showRelation = true }) {
+function MemberForm({ data, onChange, showRelation = true, error = false }) {
   const districts = data.state ? (STATE_DISTRICTS[data.state] || []) : []
   return (
     <div className="space-y-3">
-      <input className="input-field" placeholder="Full Name *"
-        value={data.name || ''} onChange={(e) => onChange('name', e.target.value)} />
+      <div>
+        <label className="block text-xs font-semibold text-brand-text-muted uppercase mb-1">
+          Full Name <span className="text-red-400">*</span>
+        </label>
+        <input className={`input-field ${error && !data.name ? 'border-red-400' : ''}`} placeholder="Full Name"
+          value={data.name || ''} onChange={(e) => onChange('name', e.target.value)} />
+      </div>
       {showRelation && (
         <select className="input-field" value={data.relation || ''} onChange={(e) => onChange('relation', e.target.value)}>
           <option value="">Select Relation</option>
@@ -48,37 +53,66 @@ function MemberForm({ data, onChange, showRelation = true }) {
         </select>
       )}
       <div className="flex gap-2">
-        <input className="input-field flex-1" placeholder="Age *" type="number"
-          value={data.age || ''} onChange={(e) => onChange('age', e.target.value)} />
-        <select className="input-field flex-1" value={data.gender || ''} onChange={(e) => onChange('gender', e.target.value)}>
-          <option value="">Gender *</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-          <option value="other">Other</option>
+        <div className="flex-1">
+          <label className="block text-xs font-semibold text-brand-text-muted uppercase mb-1">
+            Age <span className="text-red-400">*</span>
+          </label>
+          <input className={`input-field ${error && !data.age ? 'border-red-400' : ''}`} placeholder="Age" type="number"
+            value={data.age || ''} onChange={(e) => onChange('age', e.target.value)} />
+        </div>
+        <div className="flex-1">
+          <label className="block text-xs font-semibold text-brand-text-muted uppercase mb-1">
+            Gender <span className="text-red-400">*</span>
+          </label>
+          <select className={`input-field ${error && !data.gender ? 'border-red-400' : ''}`} value={data.gender || ''} onChange={(e) => onChange('gender', e.target.value)}>
+            <option value="">Select</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-brand-text-muted uppercase mb-1">
+          State <span className="text-red-400">*</span>
+        </label>
+        <select className={`input-field ${error && !data.state ? 'border-red-400' : ''}`} value={data.state || ''}
+          onChange={(e) => { onChange('state', e.target.value); onChange('district', '') }}>
+          <option value="">Select State</option>
+          {ALL_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
-      <select className="input-field" value={data.state || ''}
-        onChange={(e) => { onChange('state', e.target.value); onChange('district', '') }}>
-        <option value="">Select State</option>
-        {ALL_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-      </select>
-      <select className="input-field" value={data.district || ''} onChange={(e) => onChange('district', e.target.value)}
-        disabled={!data.state}>
-        <option value="">{data.state ? 'Select District' : 'Select state first'}</option>
-        {districts.map((d) => <option key={d} value={d}>{d}</option>)}
-      </select>
-      <input className="input-field" placeholder="City / Village"
-        value={data.city || ''} onChange={(e) => onChange('city', e.target.value)} />
-      <select className="input-field" value={data.income || ''} onChange={(e) => onChange('income', e.target.value)}>
-        <option value="">Annual Family Income *</option>
-        {INCOME_RANGES.map((r) => <option key={r} value={r}>{r}</option>)}
-      </select>
-      <select className="input-field" value={data.occupation || ''} onChange={(e) => onChange('occupation', e.target.value)}>
-        <option value="">Occupation</option>
-        {OCCUPATIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-      </select>
       <div>
-        <p className="text-xs font-medium text-brand-text-primary mb-2">Has Ayushman Card?</p>
+        <label className="block text-xs font-semibold text-brand-text-muted uppercase mb-1">District</label>
+        <select className="input-field" value={data.district || ''} onChange={(e) => onChange('district', e.target.value)}
+          disabled={!data.state}>
+          <option value="">{data.state ? 'Select District' : 'Select state first'}</option>
+          {districts.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-brand-text-muted uppercase mb-1">City / Village</label>
+        <input className="input-field" placeholder="City / Village"
+          value={data.city || ''} onChange={(e) => onChange('city', e.target.value)} />
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-brand-text-muted uppercase mb-1">
+          Annual Family Income <span className="text-red-400">*</span>
+        </label>
+        <select className={`input-field ${error && !data.income ? 'border-red-400' : ''}`} value={data.income || ''} onChange={(e) => onChange('income', e.target.value)}>
+          <option value="">Select range</option>
+          {INCOME_RANGES.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-brand-text-muted uppercase mb-1">Occupation</label>
+        <select className="input-field" value={data.occupation || ''} onChange={(e) => onChange('occupation', e.target.value)}>
+          <option value="">Select Occupation</option>
+          {OCCUPATIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+      <div>
+        <p className="text-xs font-semibold text-brand-text-muted uppercase mb-2">Has Ayushman Card?</p>
         <div className="flex gap-2">
           {['yes','no'].map((v) => (
             <button key={v} onClick={() => onChange('hasAyushman', v)}
@@ -96,26 +130,33 @@ function MemberForm({ data, onChange, showRelation = true }) {
 export default function DashboardScreen() {
   const { t, profile, setProfile, family, setFamily, navigate } = useApp()
   const [showAddMember, setShowAddMember]     = useState(false)
-  const [showEditMember, setShowEditMember]   = useState(null) // null | 'self' | member object
+  const [showEditMember, setShowEditMember]   = useState(null)
   const [newMember, setNewMember]             = useState({ ...EMPTY_MEMBER })
   const [editData, setEditData]               = useState({})
+  const [addError, setAddError]               = useState(false)
+  const [editError, setEditError]             = useState(false)
 
-  const updateNew    = (field, val) => setNewMember((p) => ({ ...p, [field]: val }))
-  const updateEdit   = (field, val) => setEditData((p) => ({ ...p, [field]: val }))
+  const updateNew    = (field, val) => { setNewMember((p) => ({ ...p, [field]: val })); setAddError(false) }
+  const updateEdit   = (field, val) => { setEditData((p) => ({ ...p, [field]: val })); setEditError(false) }
+
+  const REQUIRED = ['name', 'age', 'gender', 'state', 'income']
 
   const handleAddMember = () => {
-    if (!newMember.name || !newMember.age || !newMember.gender) return
+    if (REQUIRED.some((f) => !newMember[f])) { setAddError(true); return }
     setFamily([...family, newMember])
     setNewMember({ ...EMPTY_MEMBER })
+    setAddError(false)
     setShowAddMember(false)
   }
 
   const handleSaveEdit = () => {
+    if (REQUIRED.some((f) => !editData[f])) { setEditError(true); return }
     if (showEditMember === 'self') {
       setProfile({ ...profile, ...editData })
     } else {
       setFamily(family.map((m) => m.name === showEditMember.name ? editData : m))
     }
+    setEditError(false)
     setShowEditMember(null)
   }
 
@@ -136,7 +177,7 @@ export default function DashboardScreen() {
   ]
 
   const allMembers = [
-    { name: profile?.name || 'Me', relation: 'Self', age: profile?.age, gender: profile?.gender, isSelf: true },
+    { ...profile, name: profile?.name || 'Me', relation: 'Self', isSelf: true },
     ...family.map((m) => ({ ...m, isSelf: false })),
   ]
 
@@ -185,7 +226,7 @@ export default function DashboardScreen() {
       {/* Add member modal */}
       {showAddMember && (
         <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-end justify-center">
-          <div className="bg-white w-full max-w-[430px] rounded-t-3xl px-6 pt-6 pb-8 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white w-full max-w-[430px] rounded-t-3xl px-6 pt-6 pb-20 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display font-bold text-lg text-brand-navy">Add Family Member</h3>
               <button onClick={() => setShowAddMember(false)}>
@@ -194,9 +235,12 @@ export default function DashboardScreen() {
                 </svg>
               </button>
             </div>
-            <MemberForm data={newMember} onChange={updateNew} showRelation={true} />
+            <MemberForm data={newMember} onChange={updateNew} showRelation={true} error={addError} />
+            {addError && (
+              <p className="text-red-500 text-sm mt-3 text-center">Please fill all required fields (Name, Age, Gender, State, Income)</p>
+            )}
             <div className="flex gap-3 mt-5">
-              <button onClick={() => setShowAddMember(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => { setShowAddMember(false); setAddError(false) }} className="btn-secondary">Cancel</button>
               <button onClick={handleAddMember} className="btn-primary">Add Member</button>
             </div>
           </div>
@@ -206,7 +250,7 @@ export default function DashboardScreen() {
       {/* Edit member modal */}
       {showEditMember && (
         <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-end justify-center">
-          <div className="bg-white w-full max-w-[430px] rounded-t-3xl px-6 pt-6 pb-8 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white w-full max-w-[430px] rounded-t-3xl px-6 pt-6 pb-20 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display font-bold text-lg text-brand-navy">
                 {showEditMember === 'self' ? 'Edit Your Profile' : 'Edit Member'}
@@ -217,7 +261,10 @@ export default function DashboardScreen() {
                 </svg>
               </button>
             </div>
-            <MemberForm data={editData} onChange={updateEdit} showRelation={showEditMember !== 'self'} />
+            <MemberForm data={editData} onChange={updateEdit} showRelation={showEditMember !== 'self'} error={editError} />
+            {editError && (
+              <p className="text-red-500 text-sm mt-3 text-center">Please fill all required fields (Name, Age, Gender, State, Income)</p>
+            )}
             <div className="flex gap-3 mt-5">
               {showEditMember !== 'self' && (
                 <button onClick={handleDelete}

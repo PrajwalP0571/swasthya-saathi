@@ -10,7 +10,7 @@ const MEDICINES_INFO = [
 ]
 
 export default function MedicinesScreen() {
-  const { profile } = useApp()
+  const { profile, navigate } = useApp()
 
   const handleFind = (query) => {
     const location = [profile?.district, profile?.state].filter(Boolean).join(', ') || 'India'
@@ -22,6 +22,15 @@ export default function MedicinesScreen() {
     <div className="screen pb-28">
 
       <div className="screen-header">
+        <button
+          onClick={() => navigate('dashboard')}
+          className="flex items-center gap-1 text-brand-text-muted text-sm mb-4"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back
+        </button>
         <h1 className="screen-title">Medicines</h1>
         <p className="screen-subtitle">Find affordable and free medicines near you</p>
       </div>

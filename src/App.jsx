@@ -8,6 +8,8 @@ import SchemeFinderScreen from './screens/SchemeFinderScreen.jsx'
 import QuestionsScreen from './screens/QuestionsScreen.jsx'
 import ResultsScreen from './screens/ResultsScreen.jsx'
 import NearbyCareScreen from './screens/NearbyCareScreen.jsx'
+import MedicinesScreen from './screens/MedicinesScreen.jsx'
+import AwarenessScreen from './screens/AwarenessScreen.jsx'
 
 export default function App() {
   const { screen } = useApp()
@@ -23,6 +25,8 @@ export default function App() {
       {screen === 'questions'     && <QuestionsScreen />}
       {screen === 'results'       && <ResultsScreen />}
       {screen === 'nearby'        && <NearbyCareScreen />}
+      {screen === 'medicines'     && <MedicinesScreen />}
+      {screen === 'awareness'     && <AwarenessScreen />}
     </>
   )
 }
