@@ -222,6 +222,7 @@ export function AppProvider({ children }) {
   const [selectedMember, setSelectedMember] = useState(null);
   const [selectedNeed, setSelectedNeed] = useState(null);
   const [schemeResults, setSchemeResults] = useState([]);
+  const [selectedEditMember, setSelectedEditMember] = useState(null);
 
   const t = translations[lang];
   const navigate = (s) => setScreen(s);
@@ -235,6 +236,7 @@ export function AppProvider({ children }) {
       selectedMember, setSelectedMember,
       selectedNeed, setSelectedNeed,
       schemeResults, setSchemeResults,
+      selectedEditMember, setSelectedEditMember,
     }}>
       {children}
     </AppContext.Provider>

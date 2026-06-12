@@ -48,6 +48,31 @@ const QUESTIONS = {
   ],
 }
 
+// ─── Eligibility rules per need ───────────────────────────────────────────────
+function isMemberEligible(member, selectedNeed) {
+  const age    = parseInt(member.age) || 0
+  const gender = (member.gender || '').toLowerCase()
+
+  if (selectedNeed === 'pregnancy') {
+    if (gender !== 'female') return { eligible: false, reason: 'Pregnancy schemes are only for female members' }
+    if (age < 14)            return { eligible: false, reason: 'Member must be at least 14 years old' }
+    return { eligible: true }
+  }
+
+  if (selectedNeed === 'child') {
+    if (age > 12) return { eligible: false, reason: 'Child schemes are for members aged 12 or below' }
+    return { eligible: true }
+  }
+
+  if (selectedNeed === 'elder') {
+    if (age < 65) return { eligible: false, reason: 'Elder care schemes are for members aged 65 or above' }
+    return { eligible: true }
+  }
+
+  return { eligible: true }
+}
+
+// ─── Azure OpenAI ─────────────────────────────────────────────────────────────
 const AOAI_ENDPOINT = import.meta.env.VITE_AOAI_ENDPOINT
 const AOAI_KEY      = import.meta.env.VITE_AOAI_KEY
 const DEPLOYMENT    = import.meta.env.VITE_AOAI_DEPLOYMENT || 'gpt-4o'
@@ -57,10 +82,7 @@ async function callAzureOpenAI(systemPrompt, userPrompt) {
   const url = `${AOAI_ENDPOINT}/openai/deployments/${DEPLOYMENT}/chat/completions?api-version=${AOAI_API_VER}`
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': AOAI_KEY,
-    },
+    headers: { 'Content-Type': 'application/json', 'api-key': AOAI_KEY },
     body: JSON.stringify({
       messages: [
         { role: 'system', content: systemPrompt },
@@ -147,8 +169,7 @@ SCHEME 9: NHM FREE MEDICINES AND DIAGNOSTICS
 - Apply: Visit any government PHC, CHC, or District Hospital
 - Source: nhm.gov.in
 
-Return ONLY valid JSON in this exact format:
-{"schemes": [{"name": "scheme name", "shortDesc": "one line description", "benefit": "specific benefit with Rs amount", "howToApply": "simple steps", "source": "official website"}]}`
+Return ONLY valid JSON: {"schemes": [{"name": "...", "shortDesc": "...", "benefit": "...", "howToApply": "...", "source": "..."}]}`
 }
 
 function buildUserPrompt(profile, selectedMember, selectedNeed, answers) {
@@ -157,7 +178,7 @@ function buildUserPrompt(profile, selectedMember, selectedNeed, answers) {
 
 Name: ${selectedMember?.name || profile?.name || 'Unknown'}
 Age: ${selectedMember?.age || profile?.age || 'Unknown'}
-Gender: ${profile?.gender || 'Unknown'}
+Gender: ${selectedMember?.gender || profile?.gender || 'Unknown'}
 State: ${profile?.state || 'Unknown'}
 Annual Income: ${profile?.income || 'Unknown'}
 Occupation: ${profile?.occupation || 'Unknown'}
@@ -165,7 +186,7 @@ Has Ayushman Card: ${profile?.hasAyushman || 'Unknown'}
 Health Need: ${selectedNeed}
 Details: ${answerSummary || 'None'}
 
-Return ONLY a JSON object with schemes array. No markdown, no extra text.`
+Return ONLY a JSON object with schemes array.`
 }
 
 function parseSchemes(rawText) {
@@ -173,9 +194,7 @@ function parseSchemes(rawText) {
     const parsed = JSON.parse(rawText)
     const schemes = parsed.schemes || parsed
     if (Array.isArray(schemes) && schemes.length > 0) return schemes
-  } catch (e) {
-    console.warn('Parse error:', e)
-  }
+  } catch (e) { console.warn('Parse error:', e) }
   return [{
     name: 'Health Schemes Available',
     shortDesc: 'Government schemes based on your profile',
@@ -198,7 +217,7 @@ export default function QuestionsScreen() {
   const currentQuestion = questions[step - 1]
 
   const allMembers = [
-    { name: profile?.name || 'Myself', relation: 'Self', age: profile?.age },
+    { name: profile?.name || 'Myself', relation: 'Self', age: profile?.age, gender: profile?.gender },
     ...family,
   ]
 
@@ -233,6 +252,8 @@ export default function QuestionsScreen() {
 
   return (
     <div className="screen px-5 pt-12 pb-10">
+
+      {/* Back */}
       <button
         onClick={() => step === 0 ? navigate('schemeFinder') : setStep(step - 1)}
         className="flex items-center gap-1 text-brand-text-muted text-sm mb-6"
@@ -243,6 +264,7 @@ export default function QuestionsScreen() {
         {t.questions.back}
       </button>
 
+      {/* Progress bar */}
       <div className="flex gap-1.5 mb-8">
         {Array.from({ length: totalSteps }).map((_, i) => (
           <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300
@@ -250,26 +272,45 @@ export default function QuestionsScreen() {
         ))}
       </div>
 
+      {/* Header */}
       <div className="mb-8">
         <h1 className="screen-title">{t.questions.title}</h1>
         <p className="screen-subtitle">{t.questions.subtitle}</p>
       </div>
 
+      {/* Step 0 — member selection with eligibility */}
       {step === 0 && (
         <div>
           <p className="text-sm font-semibold text-brand-navy mb-4">{t.questions.whichMember}</p>
           <div className="flex flex-wrap gap-3">
-            {allMembers.map((m, i) => (
-              <FamilyMemberChip
-                key={i} member={m} index={i}
-                selected={selectedMember?.name === m.name}
-                onSelect={setSelectedMember}
-              />
-            ))}
+            {allMembers.map((m, i) => {
+              const { eligible, reason } = isMemberEligible(m, selectedNeed)
+              return (
+                <div key={i} className="flex flex-col items-center gap-1">
+                  <div className={`relative ${!eligible ? 'opacity-40' : ''}`}>
+                    <FamilyMemberChip
+                      member={m}
+                      index={i}
+                      selected={selectedMember?.name === m.name}
+                      onSelect={eligible ? setSelectedMember : () => {}}
+                    />
+                    {!eligible && (
+                      <div className="absolute inset-0 rounded-2xl cursor-not-allowed" />
+                    )}
+                  </div>
+                  {!eligible && (
+                    <p className="text-xs text-red-400 text-center max-w-[80px] leading-tight">
+                      {reason}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
 
+      {/* Steps 1+ — questions */}
       {step > 0 && currentQuestion && (
         <div>
           <p className="text-sm font-semibold text-brand-navy mb-4">{currentQuestion.question}</p>
@@ -291,12 +332,14 @@ export default function QuestionsScreen() {
         </div>
       )}
 
+      {/* Error */}
       {error && (
         <div className="mt-4 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
           <p className="text-red-600 text-sm">{error}</p>
         </div>
       )}
 
+      {/* Loading */}
       {loading && (
         <div className="fixed inset-0 bg-white bg-opacity-95 z-50 flex flex-col items-center justify-center gap-4 px-8">
           <div className="w-16 h-16 rounded-2xl bg-brand-green-pale flex items-center justify-center">
@@ -314,6 +357,7 @@ export default function QuestionsScreen() {
         </div>
       )}
 
+      {/* Next / Submit */}
       <div className="mt-10">
         <button
           onClick={handleNext}
@@ -323,6 +367,7 @@ export default function QuestionsScreen() {
           {step === totalSteps - 1 ? t.questions.submit : t.questions.next}
         </button>
       </div>
+
     </div>
   )
 }
