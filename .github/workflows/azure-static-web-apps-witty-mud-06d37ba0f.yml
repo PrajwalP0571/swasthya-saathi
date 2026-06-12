@@ -32,6 +32,10 @@ jobs:
           api_location: "" # Api source code path - optional
           output_location: "dist" # Built app content directory - optional
           ###### End of Repository/Build Configurations ######
+        # 👇 VITE ENVIRONMENT VARIABLES INJECTED HERE 👇
+        env:
+          VITE_FOUNDRY_ENDPOINT: ${{ secrets.VITE_FOUNDRY_ENDPOINT }}
+          VITE_FOUNDRY_KEY: ${{ secrets.VITE_FOUNDRY_KEY }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
