@@ -1,0 +1,161 @@
+{
+  "Maharashtra": {
+    "Buldhana": [
+      {
+        "id": 1,
+        "name": "Buldhana District Hospital",
+        "type": "government",
+        "address": "Civil Lines, Buldhana",
+        "city": "Buldhana",
+        "district": "Buldhana",
+        "state": "Maharashtra",
+        "phone": "7262-262500",
+        "website": "https://buldhana.gov.in",
+        "services": ["delivery", "emergency", "general"],
+        "googleMapsQuery": "Buldhana District Hospital"
+      },
+      {
+        "id": 2,
+        "name": "Shri Saibaba Hospital",
+        "type": "private",
+        "address": "Shastri Nagar, Buldhana",
+        "city": "Buldhana",
+        "district": "Buldhana",
+        "state": "Maharashtra",
+        "phone": "7262-255566",
+        "website": "https://saibabahosp.com",
+        "services": ["delivery", "general", "surgery"],
+        "googleMapsQuery": "Shri Saibaba Hospital Buldhana"
+      },
+      {
+        "id": 3,
+        "name": "Buldhana Primary Health Centre",
+        "type": "phc",
+        "address": "Civil Lines, Buldhana",
+        "city": "Buldhana",
+        "district": "Buldhana",
+        "state": "Maharashtra",
+        "phone": "7262-250000",
+        "website": "https://buldhana.gov.in/phc",
+        "services": ["vaccination", "general_checkup"],
+        "googleMapsQuery": "Buldhana Primary Health Centre"
+      },
+      {
+        "id": 4,
+        "name": "Jan Aushadhi Kendra Buldhana",
+        "type": "medicine",
+        "address": "Market Area, Buldhana",
+        "city": "Buldhana",
+        "district": "Buldhana",
+        "state": "Maharashtra",
+        "phone": "7262-245566",
+        "website": "https://janaushadhi.gov.in",
+        "services": ["generic_medicines"],
+        "googleMapsQuery": "Jan Aushadhi Kendra Buldhana"
+      }
+    ],
+    "Pune": [
+      {
+        "id": 5,
+        "name": "Sassoon General Hospital",
+        "type": "government",
+        "address": "Sassoon Road, Pune",
+        "city": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "phone": "020-2605-2020",
+        "website": "https://sassoonhospital.gov.in",
+        "services": ["delivery", "emergency", "surgery", "general"],
+        "googleMapsQuery": "Sassoon General Hospital Pune"
+      },
+      {
+        "id": 6,
+        "name": "Ruby Hall Clinic",
+        "type": "private",
+        "address": "Sassoon Road, Pune",
+        "city": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "phone": "020-2605-1234",
+        "website": "https://rubyhallclinic.com",
+        "services": ["delivery", "surgery", "general"],
+        "googleMapsQuery": "Ruby Hall Clinic Pune"
+      },
+      {
+        "id": 7,
+        "name": "Pune PMJAY Hospital",
+        "type": "pmjay",
+        "address": "Camp, Pune",
+        "city": "Pune",
+        "district": "Pune",
+        "state": "Maharashtra",
+        "phone": "020-2613-1111",
+        "website": "https://pmjaycomp.org/pune",
+        "services": ["surgery", "delivery", "general"],
+        "googleMapsQuery": "PMJAY Hospital Pune"
+      }
+    ],
+    "Nagpur": [
+      {
+        "id": 8,
+        "name": "Nagpur Civil Hospital",
+        "type": "government",
+        "address": "Central Avenue, Nagpur",
+        "city": "Nagpur",
+        "district": "Nagpur",
+        "state": "Maharashtra",
+        "phone": "0712-2561-111",
+        "website": "https://nagpur.gov.in",
+        "services": ["delivery", "emergency", "general"],
+        "googleMapsQuery": "Nagpur Civil Hospital"
+      }
+    ]
+  },
+  "Delhi": {
+    "New Delhi": [
+      {
+        "id": 9,
+        "name": "All India Institute of Medical Sciences",
+        "type": "government",
+        "address": "Ansari Nagar, New Delhi",
+        "city": "New Delhi",
+        "district": "Central Delhi",
+        "state": "Delhi",
+        "phone": "011-2659-3657",
+        "website": "https://aiims.edu",
+        "services": ["delivery", "emergency", "surgery", "general"],
+        "googleMapsQuery": "AIIMS New Delhi"
+      },
+      {
+        "id": 10,
+        "name": "Apollo Hospital Delhi",
+        "type": "private",
+        "address": "Sarita Vihar, New Delhi",
+        "city": "New Delhi",
+        "district": "South Delhi",
+        "state": "Delhi",
+        "phone": "011-2960-5060",
+        "website": "https://apollohospitals.com",
+        "services": ["delivery", "surgery", "general"],
+        "googleMapsQuery": "Apollo Hospital New Delhi"
+      }
+    ]
+  },
+  "Karnataka": {
+    "Bangalore": [
+      {
+        "id": 11,
+        "name": "Bangalore City Hospital",
+        "type": "government",
+        "address": "KR Puram, Bangalore",
+        "city": "Bangalore",
+        "district": "Bangalore",
+        "state": "Karnataka",
+        "phone": "080-2555-1111",
+        "website": "https://bangalorehospital.org",
+        "services": ["delivery", "emergency", "surgery", "general"],
+        "googleMapsQuery": "Bangalore City Hospital"
+      }
+    ]
+  }
+}

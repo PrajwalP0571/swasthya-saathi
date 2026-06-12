@@ -1,227 +1,287 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext.jsx'
 import BottomNav from '../components/BottomNav.jsx'
+import hospitalsData from '../data/hospitals.json'
 
-const MOCK_HOSPITALS = [
+const CARE_TYPES = [
   {
-    name: 'District Government Hospital',
-    type: 'Government',
-    distance: '1.2',
-    address: 'Civil Lines, Near Collector Office',
-    tags: ['PMJAY Empanelled', 'Emergency', '24x7'],
-    phone: '108',
-    pmjay: true,
+    key: 'hospital',
+    label: 'Government Hospital',
+    emoji: '🏥',
+    type: 'government',
+    color: 'bg-brand-green-pale border-brand-green',
+    textColor: 'text-brand-green',
   },
   {
-    name: 'Primary Health Centre (PHC)',
-    type: 'PHC',
-    distance: '0.6',
-    address: 'Gram Panchayat Road, Ward No. 3',
-    tags: ['Free OPD', 'Vaccination', 'Maternity'],
-    phone: '104',
-    pmjay: false,
+    key: 'pmjay',
+    label: 'PMJAY Empanelled',
+    emoji: '🛡️',
+    type: 'pmjay',
+    color: 'bg-blue-50 border-blue-200',
+    textColor: 'text-blue-600',
   },
   {
-    name: 'Community Health Centre (CHC)',
-    type: 'CHC',
-    distance: '3.4',
-    address: 'Taluka Headquarters, Main Road',
-    tags: ['PMJAY Empanelled', 'Surgery', 'Specialist'],
-    phone: '108',
-    pmjay: true,
+    key: 'phc',
+    label: 'PHC / CHC',
+    emoji: '🏠',
+    type: 'phc',
+    color: 'bg-teal-50 border-teal-200',
+    textColor: 'text-teal-600',
   },
   {
-    name: 'Jan Aushadhi Kendra',
-    type: 'Pharmacy',
-    distance: '0.3',
-    address: 'Near Bus Stand, Market Area',
-    tags: ['Generic Medicines', '50-90% Cheaper'],
-    phone: null,
-    pmjay: false,
+    key: 'medicine',
+    label: 'Jan Aushadhi',
+    emoji: '💊',
+    type: 'medicine',
+    color: 'bg-orange-50 border-orange-200',
+    textColor: 'text-orange-600',
+  },
+  {
+    key: 'diagnostic',
+    label: 'Diagnostic Centre',
+    emoji: '🔬',
+    type: 'diagnostic',
+    color: 'bg-purple-50 border-purple-200',
+    textColor: 'text-purple-600',
   },
 ]
 
-const tagColors = {
-  'PMJAY Empanelled': 'bg-brand-green-pale text-brand-green',
-  'Emergency':        'bg-red-50 text-red-600',
-  '24x7':             'bg-blue-50 text-blue-600',
-  'Free OPD':         'bg-purple-50 text-purple-600',
-  'Vaccination':      'bg-teal-50 text-teal-600',
-  'Maternity':        'bg-pink-50 text-pink-600',
-  'Surgery':          'bg-orange-50 text-orange-600',
-  'Specialist':       'bg-indigo-50 text-indigo-600',
-  'Generic Medicines':'bg-amber-50 text-amber-600',
-  '50-90% Cheaper':   'bg-green-50 text-green-600',
-}
-
-const typeIcons = {
-  Government: '🏥',
-  PHC:        '🏠',
-  CHC:        '🏨',
-  Pharmacy:   '💊',
-}
-
 export default function NearbyCareScreen() {
-  const { t, navigate } = useApp()
-  const [pincode, setPincode] = useState('')
-  const [searched, setSearched] = useState(false)
-  const [activeFilter, setActiveFilter] = useState('All')
+  const { t, profile, navigate } = useApp()
+  const [selectedState, setSelectedState] = useState(profile?.state || '')
+  const [selectedDistrict, setSelectedDistrict] = useState(profile?.district || '')
+  const [selectedType, setSelectedType] = useState(null)
+  const [showHospitalList, setShowHospitalList] = useState(false)
 
-  const filters = ['All', 'PMJAY', 'PHC / CHC', 'Pharmacy']
+  // Get available states
+  const states = Object.keys(hospitalsData)
+  
+  // Get available districts for selected state
+  const districts = selectedState ? Object.keys(hospitalsData[selectedState] || {}) : []
 
-  const filteredHospitals = MOCK_HOSPITALS.filter((h) => {
-    if (activeFilter === 'All') return true
-    if (activeFilter === 'PMJAY') return h.pmjay
-    if (activeFilter === 'PHC / CHC') return h.type === 'PHC' || h.type === 'CHC'
-    if (activeFilter === 'Pharmacy') return h.type === 'Pharmacy'
-    return true
-  })
+  // Get hospitals for selected district and type
+  const getHospitals = () => {
+    if (!selectedState || !selectedDistrict || !selectedType) return []
+    
+    const hospitalList = hospitalsData[selectedState]?.[selectedDistrict] || []
+    return hospitalList.filter(h => h.type === selectedType.type)
+  }
+
+  const hospitals = getHospitals()
+
+  const handleCareTypeSelect = (careType) => {
+    if (!selectedState || !selectedDistrict) {
+      alert('Please select State and District first')
+      return
+    }
+    setSelectedType(careType)
+    setShowHospitalList(true)
+  }
+
+  const handleHospitalClick = (hospital) => {
+    const query = `${hospital.name}, ${hospital.city}, ${hospital.state}`
+    const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}`
+    window.open(mapsUrl, '_blank')
+  }
 
   return (
     <div className="screen pb-28">
 
       {/* Header */}
       <div className="screen-header">
+        <button
+          onClick={() => navigate('dashboard')}
+          className="flex items-center gap-1 text-brand-text-muted text-sm mb-4"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back
+        </button>
         <h1 className="screen-title">{t.nearby.title}</h1>
         <p className="screen-subtitle">{t.nearby.subtitle}</p>
       </div>
 
-      {/* Search bar */}
-      <div className="px-5 mb-4">
-        <div className="flex gap-2">
-          <input
-            type="number"
-            className="input-field flex-1"
-            placeholder={t.nearby.searchPlaceholder}
-            value={pincode}
-            onChange={(e) => setPincode(e.target.value)}
-          />
-          <button
-            onClick={() => setSearched(true)}
-            className="px-5 py-3 rounded-xl bg-brand-green text-white text-sm font-semibold active:scale-95 transition-transform"
-          >
-            {t.nearby.search}
-          </button>
-        </div>
-      </div>
+      {/* Hospital list view */}
+      {showHospitalList ? (
+        <>
+          <div className="px-5 mb-4">
+            <button
+              onClick={() => setShowHospitalList(false)}
+              className="flex items-center gap-2 text-brand-green text-sm font-semibold mb-4"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              Back
+            </button>
 
-      {/* Emergency banner */}
-      <div className="mx-5 mb-4">
-        <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🚨</span>
-            <div>
-              <p className="text-red-700 font-semibold text-sm">Emergency?</p>
-              <p className="text-red-500 text-xs">Call 108 — Free ambulance</p>
+            <div className="card border border-brand-green-pale mb-4">
+              <p className="text-sm font-semibold text-brand-navy mb-2">📍 Searching near</p>
+              <p className="text-xs text-brand-green font-medium">{selectedDistrict}, {selectedState}</p>
             </div>
           </div>
-          <a
-            href="tel:108"
-            className="bg-red-600 text-white text-sm font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform"
-          >
-            Call 108
-          </a>
-        </div>
-      </div>
 
-      {/* Filter chips */}
-      <div className="px-5 mb-4">
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {filters.map((f) => (
-            <button
-              key={f}
-              onClick={() => setActiveFilter(f)}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold border transition-all duration-150
-                ${activeFilter === f
-                  ? 'bg-brand-green text-white border-brand-green'
-                  : 'bg-white text-brand-text-secondary border-gray-200'
-                }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Hospital list */}
-      <div className="px-5 space-y-3">
-        {filteredHospitals.map((hospital, i) => (
-          <div key={i} className="card border border-gray-100">
-
-            {/* Top row */}
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-grey-soft flex items-center justify-center text-xl flex-shrink-0">
-                {typeIcons[hospital.type] || '🏥'}
+          <div className="px-5">
+            {hospitals.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-brand-navy mb-3">
+                  {hospitals.length} {selectedType?.label} Found
+                </p>
+                {hospitals.map((hospital) => (
+                  <button
+                    key={hospital.id}
+                    onClick={() => handleHospitalClick(hospital)}
+                    className="w-full text-left card border border-gray-100 hover:border-brand-green hover:bg-brand-green-pale transition-all duration-150 active:scale-95"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <p className="font-semibold text-brand-navy text-sm">{hospital.name}</p>
+                        <p className="text-xs text-brand-text-muted mt-1">{hospital.address}</p>
+                      </div>
+                      <span className="text-2xl ml-2">{selectedType?.emoji}</span>
+                    </div>
+                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                      <a href={`tel:${hospital.phone}`} className="text-xs text-brand-green font-semibold flex items-center gap-1">
+                        📞 {hospital.phone}
+                      </a>
+                      <span className="text-xs text-brand-text-muted">•</span>
+                      <span className="text-xs text-brand-text-muted">Tap for directions →</span>
+                    </div>
+                  </button>
+                ))}
               </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-display font-semibold text-brand-navy text-sm leading-snug">
-                    {hospital.name}
-                  </h3>
-                  <span className="text-xs text-brand-text-muted flex-shrink-0">
-                    {hospital.distance} {t.nearby.distance}
-                  </span>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+                  <span className="text-2xl">🏥</span>
                 </div>
-                <p className="text-brand-text-muted text-xs mt-0.5">{hospital.address}</p>
+                <p className="font-semibold text-brand-navy mb-1">No hospitals found</p>
+                <p className="text-xs text-brand-text-muted">Try searching in a different district or state</p>
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Location selection view */}
+          <div className="px-5 mb-5">
+            <div className="card border border-gray-100">
+              <p className="text-xs font-semibold text-brand-text-muted uppercase tracking-wide mb-4">Your Location</p>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-brand-text-muted uppercase mb-1 block">State</label>
+                  <select
+                    className="input-field"
+                    value={selectedState}
+                    onChange={(e) => {
+                      setSelectedState(e.target.value)
+                      setSelectedDistrict('')
+                    }}
+                  >
+                    <option value="">Select State</option>
+                    {states.map(state => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedState && (
+                  <div>
+                    <label className="text-xs font-semibold text-brand-text-muted uppercase mb-1 block">District</label>
+                    <select
+                      className="input-field"
+                      value={selectedDistrict}
+                      onChange={(e) => setSelectedDistrict(e.target.value)}
+                    >
+                      <option value="">Select District</option>
+                      {districts.map(district => (
+                        <option key={district} value={district}>{district}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {selectedState && selectedDistrict && (
+                <p className="text-xs text-brand-green font-medium mt-3">
+                  📍 Searching near: {selectedDistrict}, {selectedState}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Emergency banner */}
+          <div className="mx-5 mb-5">
+            <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🚨</span>
+                <div>
+                  <p className="text-red-700 font-semibold text-sm">Emergency?</p>
+                  <p className="text-red-500 text-xs">Call 108 — Free ambulance anywhere in India</p>
+                </div>
+              </div>
+              <a href="tel:108" className="bg-red-600 text-white text-sm font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform">
+                Call 108
+              </a>
+            </div>
+          </div>
+
+          {/* Care type grid */}
+          {selectedState && selectedDistrict && (
+            <div className="px-5 mb-5">
+              <p className="text-sm font-semibold text-brand-navy mb-3">What are you looking for?</p>
+              <div className="grid grid-cols-2 gap-3">
+                {CARE_TYPES.map((type) => (
+                  <button
+                    key={type.key}
+                    onClick={() => handleCareTypeSelect(type)}
+                    className={`flex items-center gap-3 p-4 rounded-2xl border-2 text-left active:scale-95 transition-all duration-150 ${type.color}`}
+                  >
+                    <span className="text-2xl">{type.emoji}</span>
+                    <span className={`text-sm font-semibold leading-tight ${type.textColor}`}>{type.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
+          )}
 
-            {/* Tags */}
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {hospital.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${tagColors[tag] || 'bg-gray-100 text-gray-600'}`}
-                >
-                  {tag}
-                </span>
+          {/* Info banner */}
+          <div className="mx-5 mb-4">
+            <div className="bg-brand-green-pale rounded-2xl px-4 py-3">
+              <p className="text-brand-green text-xs font-semibold mb-1">ℹ️ How this works</p>
+              <p className="text-brand-text-secondary text-xs leading-relaxed">
+                Select your location to find real hospitals, clinics, and medical facilities near you. Tap on any facility to get directions and contact information.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick links */}
+          <div className="px-5">
+            <p className="text-sm font-semibold text-brand-navy mb-3">Quick Helplines</p>
+            <div className="space-y-2">
+              {[
+                { label: 'Health Helpline', number: '104', desc: 'Free medical advice 24x7', color: 'bg-brand-green' },
+                { label: 'Women Helpline', number: '181', desc: 'Women in distress', color: 'bg-pink-500' },
+                { label: 'Child Helpline', number: '1098', desc: 'Children in need', color: 'bg-blue-500' },
+                { label: 'Mental Health', number: 'iCall: 9152987821', desc: 'Psychological support', color: 'bg-purple-500' },
+              ].map((h) => (
+                <div key={h.number} className="bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-brand-navy font-semibold text-sm">{h.label}</p>
+                    <p className="text-brand-text-muted text-xs">{h.desc}</p>
+                  </div>
+                  <a href={`tel:${h.number}`}
+                    className={`${h.color} text-white text-xs font-bold px-3 py-2 rounded-xl active:scale-95 transition-transform`}>
+                    {h.number}
+                  </a>
+                </div>
               ))}
             </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-2">
-              {hospital.phone && (
-                <a
-                  href={`tel:${hospital.phone}`}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-brand-green-pale text-brand-green text-xs font-semibold active:scale-95 transition-transform"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
-                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
-                  </svg>
-                  {t.nearby.call}
-                </a>
-              )}
-              <button
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-blue-50 text-blue-600 text-xs font-semibold active:scale-95 transition-transform"
-                onClick={() => {
-                  window.open(`https://www.google.com/maps/search/${encodeURIComponent(hospital.name)}`, '_blank')
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
-                  <polygon points="3 11 22 2 13 21 11 13 3 11" />
-                </svg>
-                {t.nearby.directions}
-              </button>
-            </div>
           </div>
-        ))}
-      </div>
-
-      {/* 104 Health Helpline banner */}
-      <div className="mx-5 mt-4">
-        <div className="bg-brand-navy rounded-2xl px-4 py-3 flex items-center justify-between">
-          <div>
-            <p className="text-white font-semibold text-sm">Health Helpline</p>
-            <p className="text-blue-200 text-xs">Free medical advice 24x7</p>
-          </div>
-          <a
-            href="tel:104"
-            className="bg-brand-green text-white text-sm font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform"
-          >
-            Call 104
-          </a>
-        </div>
-      </div>
+        </>
+      )}
 
       <BottomNav />
     </div>
