@@ -148,6 +148,8 @@ The entire response is delivered in the user's chosen language — English, Hind
 [Architecture Diagram](screenshots/architecture.png)
 ![Project Logo](architecture.png)
 
+![Application Architecture](screenshots/architecture.png)
+
 ```
 User (Mobile Browser — English / Hindi / Marathi)
         │
