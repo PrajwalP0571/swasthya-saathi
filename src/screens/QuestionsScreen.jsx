@@ -192,7 +192,9 @@ Return ONLY a JSON object with schemes array.`
 
 function parseSchemes(rawText) {
   try {
-    const parsed = JSON.parse(rawText)
+    //const parsed = JSON.parse(rawText)
+    const clean = rawText.replace(/```json|```/g, '').trim()
+    const parsed = JSON.parse(clean)
     const schemes = parsed.schemes || parsed
     if (Array.isArray(schemes) && schemes.length > 0) return schemes
   } catch (e) { console.warn('Parse error:', e) }
