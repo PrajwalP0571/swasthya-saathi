@@ -145,7 +145,7 @@ The entire response is delivered in the user's chosen language — English, Hind
 
 ## 🧱 Architecture
 
-![Architecture Diagram](screenshots/architecture.png)
+[Architecture Diagram](screenshots/architecture.png)
 
 ```
 User (Mobile Browser — English / Hindi / Marathi)
