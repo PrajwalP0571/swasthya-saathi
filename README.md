@@ -145,46 +145,7 @@ The entire response is delivered in the user's chosen language — English, Hind
 
 ## 🧱 Architecture
 
-[Architecture Diagram](screenshots/architecture.png)
-![Project Logo](architecture.png)
-
 ![Application Architecture](screenshots/architecture.png)
-
-```
-User (Mobile Browser — English / Hindi / Marathi)
-        │
-        ▼
-┌─────────────────────────────────────────────┐
-│         React Frontend (Vite + Tailwind)     │
-│                                             │
-│  AppContext (State + i18n + Navigation)     │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
-│  │ Profile  │  │ Family   │  │ Scheme   │  │
-│  │ Manager  │  │Dashboard │  │ Finder   │  │
-│  └──────────┘  └──────────┘  └────┬─────┘  │
-│                                   │        │
-│  ┌──────────┐  ┌──────────┐       │        │
-│  │ Nearby   │  │Medicines │       │        │
-│  │ Care Hub │  │& Health  │       │        │
-│  └──────────┘  └──────────┘       │        │
-└───────────────────────────────────┼────────┘
-                                    │
-                                    ▼
-                    ┌───────────────────────────┐
-                    │   Microsoft Foundry IQ    │
-                    │   Azure AI Foundry Agent  │
-                    │   (Swasthya-Saathi)       │
-                    │   Model: GPT-4o           │
-                    │   Protocol: Responses API │
-                    │   Grounded & Cited        │
-                    └───────────────────────────┘
-                                    │
-                                    ▼
-                    ┌───────────────────────────┐
-                    │  Azure Static Web Apps    │
-                    │  CI/CD via GitHub Actions │
-                    └───────────────────────────┘
-```
 
 ---
 
@@ -198,14 +159,18 @@ User (Mobile Browser — English / Hindi / Marathi)
 
 ### Installation
 
-1. **Clone the repository**
+1. **Fork the repository**
    ```bash
-   git clone https://github.com/PrajwalP0571/swasthya-saathi.git
+   # Clone your forked copy (replace 'YOUR_USERNAME' with your GitHub username)
+   git clone https://github.com/<Your-User-Name>/swasthya-saathi.git
+
+   # Navigate into the project directory
    cd swasthya-saathi
    ```
 
 2. **Install dependencies**
    ```bash
+   # Install all the required packages listed in package.json
    npm install
    ```
 
@@ -221,12 +186,14 @@ User (Mobile Browser — English / Hindi / Marathi)
 
 4. **Run locally**
    ```bash
+   # Start the local development server
    npm run dev
    ```
-   Open `http://localhost:5173`
+   Open `http://localhost:5173` in Your Browser
 
 5. **Production build**
    ```bash
+   # Compile and optimize the project for production deployment
    npm run build
    ```
 
